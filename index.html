@@ -51,6 +51,7 @@ h2.page{font:800 clamp(38px,11vw,56px)/1 'Bricolage Grotesque';letter-spacing:-.
 .tube{position:relative;flex:1;height:22px;margin-left:-12px;border-radius:0 99px 99px 0;background:#ebe6da;box-shadow:inset 0 3px 6px rgba(0,0,0,.12)}
 .tube .g{position:absolute;inset:0;border-radius:0 99px 99px 0;background:var(--th);clip-path:inset(0 calc(100% - var(--w,0%)) 0 0);transition:clip-path 1s cubic-bezier(.2,.9,.2,1)}
 .tube .cool{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(45deg,rgba(255,255,255,.7) 0 3px,rgba(36,36,36,.28) 3px 6px);transition:all 1s cubic-bezier(.2,.9,.2,1)}
+.knob{display:none;position:absolute;top:50%;width:42px;height:42px;border-radius:50%;transform:translate(-50%,-50%);place-items:center;font:800 14px 'Bricolage Grotesque';color:#fff;border:3px solid #fff;box-shadow:0 5px 14px rgba(0,0,0,.3);transition:left 1s cubic-bezier(.2,.9,.2,1),background .6s;z-index:3;text-shadow:0 1px 2px rgba(0,0,0,.35)}
 .tube .best{position:absolute;top:-30px;transform:translateX(-50%);font:700 11px 'Bricolage Grotesque';white-space:nowrap;transition:left 1s}
 .tube .best:after{content:"";display:block;width:2px;height:46px;background:var(--ink);margin:2px auto 0;opacity:.55}
 .scale{display:flex;justify-content:space-between;margin:6px 0 0 32px;font:600 11px 'Bricolage Grotesque';color:var(--mute)}
@@ -95,7 +96,9 @@ pre.share{background:#fff;color:var(--ink);border-radius:18px;padding:16px;font:
 .sc .s{font:700 15px 'Bricolage Grotesque';color:#e4e1da}.sc .sm{font-size:12.5px;color:#9a978f;letter-spacing:.01em}
 .scn{font:800 46px/1 'Bricolage Grotesque';letter-spacing:-.04em;margin:12px 0 6px;color:#fff}
 .sq{display:flex;gap:6px;justify-content:center;margin:14px 0}.sq i{width:30px;height:30px;border-radius:9px}
-.win .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.win .row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:22px}
+.win .row button{width:100%;min-height:54px}
+.win .row #shBtn{grid-column:1/-1}
 .win button.ghost{color:#fff;border-color:#fff}
 .win button:not(.ghost){background:#fff;color:var(--ink)}
 .rate{margin:18px 0 4px;text-align:left}.rate .s{font:700 15px 'Bricolage Grotesque';color:#e4e1da}
@@ -150,7 +153,7 @@ pre.share{background:#fff;color:var(--ink);border-radius:18px;padding:16px;font:
       <div class="two">meaning match<br><b id="sim">–</b>/100</div></div>
     <div class="thermo" id="thermo" role="img" aria-label="Temperature bar">
       <div class="bulb"></div>
-      <div class="tube"><div class="g"></div><div class="cool" id="coolSeg"></div><div class="best" id="bestMark" style="display:none">best <span id="bestV"></span>°</div></div>
+      <div class="tube"><div class="g"></div><div class="cool" id="coolSeg"></div><div class="knob" id="knob"></div><div class="best" id="bestMark" style="display:none">best <span id="bestV"></span>°</div></div>
     </div>
     <div class="scale"><span>0°</span><span>25°</span><span>50°</span><span>75°</span><span>100°</span></div>
   </div>
@@ -268,7 +271,8 @@ function paint(sim,eff,best,col){
 function render(){
   const n=G.guesses.length,secs=elapsed(),last=G.guesses[n-1],best=n?Math.max(...G.guesses.map(g=>g.sim)):null;
   $("#nG").textContent=n;$("#tm").textContent=fmt(secs);$("#nH").textContent=G.hints;
-  if(G.solved){$("#eff").classList.add("idle");$("#sim").textContent="100";$("#bandLabel").textContent="Correct after "+n+" guess"+(n==1?"":"es");paint(100,100,null,band(G.final)[2])}
+  $("#knob").style.display="none";
+  if(G.solved){$("#eff").classList.add("idle");$("#sim").textContent="100";$("#bandLabel").textContent="Correct after "+n+" guess"+(n==1?"":"es");paint(G.final,G.final,null,band(G.final)[2]);const kb=$("#knob");kb.style.display="grid";kb.style.left=Math.max(5,Math.min(95,G.final))+"%";kb.textContent=G.final;kb.style.background=band(G.final)[2]}
   else if(last){const eff=effTemp(last.sim,secs,n),b=band(eff);
     $("#eff").classList.remove("idle");$("#eff").textContent=eff+"°";$("#sim").textContent=last.sim;$("#bandLabel").textContent=b[1]+(eff!==last.sim&&!G.solved?" (cooled from "+band(last.sim)[1].toLowerCase()+")":"");paint(last.sim,eff,best,b[2])}
   else{$("#eff").classList.add("idle");$("#eff").textContent="";$("#sim").textContent="–";$("#bandLabel").textContent="Guess to begin…";paint(0,0,null,"#5BB8F5")}
@@ -289,6 +293,10 @@ function shareText(){
   const d=G.final,g=G.guesses.length;
   const url=location.protocol.startsWith("http")?`\n${location.origin}${location.pathname}?p=${puzzleId}`:"";
   return`TO WHAT DEGREE?\nDAILY #${String(dayNum(puzzleId)).padStart(3,"0")}\n\n🌡️ ${d}°\nSolved in ${g} guess${g==1?"":"es"}${G.hints?` · ${G.hints} hint${G.hints>1?"s":""}`:""}${G.rating?`\nDifficulty: ${RATES[G.rating][0]} ${RATES[G.rating][1]}`:""}\n\nCan you beat my temperature?${url}`;
+}
+async function copyText(t){
+  try{await navigator.clipboard.writeText(t);return true}catch{}
+  try{const a=document.createElement("textarea");a.value=t;a.style.cssText="position:fixed;opacity:0";document.body.appendChild(a);a.select();const ok=document.execCommand("copy");a.remove();return ok}catch{return false}
 }
 const RATES={easy:["Easy","😌"],medium:["Medium","🙂"],hard:["Hard","😅"],brutal:["Absolutely brutal","💀"]};
 const ratingLine=()=>G.rating?`Felt: ${RATES[G.rating][0]} ${RATES[G.rating][1]}`:"";
@@ -312,8 +320,11 @@ function resultHTML(){
 document.addEventListener("click",async e=>{
   const id=e.target.id,rb=e.target.closest("button[data-r]");
   if(rb){G.rating=G.rating===rb.dataset.r?null:rb.dataset.r;persist();$$(".rb button").forEach(b=>b.classList.toggle("on",b.dataset.r===G.rating));$("#rateNote").textContent=rateNote();$("#scRate").textContent=ratingLine();return}
-  if(id==="cpBtn"){try{await navigator.clipboard.writeText(shareText());e.target.textContent="Copied ✓"}catch{e.target.textContent="Select and copy"}}
-  if(id==="shBtn"){const t=shareText();if(navigator.share)try{await navigator.share({text:t})}catch{}else try{await navigator.clipboard.writeText(t);e.target.textContent="Copied ✓"}catch{}}
+  if(id==="cpBtn"||id==="shBtn"){
+    const b=e.target,txt=shareText(),label=b.textContent,done=m=>{b.textContent=m;setTimeout(()=>b.textContent=label,1800)};
+    if(id==="shBtn"&&navigator.share){try{await navigator.share({text:txt});return}catch(err){if(err&&err.name==="AbortError")return}}
+    done(await copyText(txt)?"Copied ✓":"Couldn't copy");
+  }
   if(id==="stBtn")go("stats");
 });
 
