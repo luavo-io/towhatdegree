@@ -120,6 +120,17 @@ pre.share{background:#fff;color:var(--ink);border-radius:18px;padding:16px;font:
 .cal a.done{background:var(--k);border-color:transparent;color:#fff}
 .cal a.today{border:2.5px solid var(--ink)}
 .cal a.empty{visibility:hidden}
+.prog{display:flex;flex-direction:column;gap:12px;font:600 16px 'Bricolage Grotesque'}.prog b{font-size:26px;letter-spacing:-.03em}
+.prog .t{height:10px;border-radius:9px;background:#ebe6da;overflow:hidden}.prog .t i{display:block;height:100%;background:var(--th);border-radius:9px}
+.mh{font:800 22px 'Bricolage Grotesque';letter-spacing:-.03em;margin:22px 2px 10px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.tile{display:flex;flex-direction:column;justify-content:space-between;gap:6px;min-height:116px;padding:13px;border-radius:20px;background:var(--card);border:1.5px dashed #cfc9ba;text-decoration:none;color:var(--ink);box-shadow:0 10px 24px -20px rgba(0,0,0,.4);transition:transform .15s}
+.tile small{font:600 12px 'Bricolage Grotesque';color:var(--mute)}
+.tile b{font:800 28px/1 'Bricolage Grotesque';letter-spacing:-.04em}
+.tile span{font:700 14px 'Bricolage Grotesque'}
+.tile.done{background:var(--k);border:0;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.25)}.tile.done small{color:rgba(255,255,255,.9)}
+.tile.today{border:2.5px solid var(--ink)}
+.tile:active{transform:scale(.97)}
 .nums{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .nums div{background:var(--card);border-radius:20px;padding:16px 8px;text-align:center;box-shadow:0 1px 0 var(--line)}
 .nums b{display:block;font:800 34px/1 'Bricolage Grotesque';letter-spacing:-.05em}
@@ -189,7 +200,7 @@ pre.share{background:#fff;color:var(--ink);border-radius:18px;padding:16px;font:
 <section id="archive" class="view">
   <h2 class="page">Archive</h2>
   <p class="lede">Every past puzzle, ready to replay. Old games don't change your streak.</p>
-  <div class="cal card" id="cal"></div>
+  <div id="cal"></div>
 </section>
 
 <section id="stats" class="view">
@@ -226,7 +237,20 @@ const utc=id=>{const [y,m,d]=id.split("-").map(Number);return Date.UTC(y,m-1,d)}
 const dayNum=id=>Math.round((utc(id)-utc(EPOCH))/864e5)+1;
 const idFromNum=n=>new Date(utc(EPOCH)+(n-1)*864e5).toISOString().slice(0,10);
 const toMidnight=()=>{const p=ukParts();return 86400-(+p.hour*3600+ +p.minute*60+ +p.second)};
-const target=id=>DATA[(dayNum(id)-1)%DATA.length];
+const EXTRA_RAW="animal:lion tiger elephant giraffe zebra monkey gorilla panda koala kangaroo penguin dolphin whale shark octopus turtle crocodile snake frog rabbit squirrel fox wolf bear deer horse cow pig sheep goat chicken duck eagle owl parrot butterfly spider bee ant camel hippo rhino leopard cheetah otter seal hedgehog bat mouse hamster donkey swan flamingo peacock lobster crab jellyfish dragonfly tortoise cat dog hawk falcon raven pigeon robin mosquito snail worm lizard beaver badger moose bison buffalo gazelle antelope walrus sloth lemur meerkat pony lamb|food:bread cheese butter apple banana orange lemon strawberry cherry grape pineapple potato tomato carrot onion garlic mushroom pepper rice pasta noodle soup salad sandwich burger sausage bacon egg chocolate cake biscuit cookie honey sugar salt jam yogurt cereal popcorn pancake waffle doughnut curry sushi taco steak olive peach mango coconut cucumber lettuce broccoli pumpkin cabbage spinach avocado walnut peanut almond raisin muffin pie pudding custard sauce ketchup mustard vinegar flour toast omelette lasagne kebab dumpling cinnamon ginger vanilla caramel candy lollipop marshmallow|drink:tea milk juice wine beer lemonade smoothie cocktail whisky cider champagne cola espresso cappuccino milkshake|place:city village beach airport station school hospital museum church market prison palace stadium tunnel canal cave valley waterfall meadow swamp glacier canyon lagoon cliff orchard playground supermarket hotel restaurant office factory cemetery cottage mansion apartment skyscraper tower fortress temple mosque cathedral monastery zoo aquarium circus carnival fairground campsite marina motorway pavement alley fountain park street shop pub gym bank|object:chair table sofa bed lamp window door key lock knife spoon fork plate cup bottle bucket basket hammer ladder scissors needle button ribbon blanket pillow towel soap brush comb razor toothbrush telescope camera radio television telephone computer keyboard battery magnet balloon kite puzzle trophy medal crown sword shield arrow helmet anchor lantern torch wallet purse suitcase backpack envelope stamp map globe calendar notebook pencil pen paper rope chain spade shovel axe saw drill screw nail bolt wheel engine thermometer microscope binoculars vase teapot kettle toaster microwave oven fridge vacuum mop broom bin sponge diary ticket coin banknote necklace ring bracelet watch glasses sunglasses mask gift parcel tent|clothing:jacket coat shirt skirt dress sock shoe boot scarf glove hat sweater tie belt uniform jeans bikini cape apron slipper sandal trainers hoodie cardigan|nature:river lake tree leaf flower rose daisy grass moss rock stone sand mud ice fire smoke cloud rainbow lightning wind storm fog star moon sun planet comet galaxy tide wave tulip sunflower bush branch root seed thorn cactus bamboo coral reef pebble puddle breeze frost hurricane tornado earthquake avalanche iceberg|body:hand finger thumb arm leg knee foot toe head hair eye ear nose mouth tooth tongue heart brain bone skin muscle shoulder elbow lung stomach neck back chin cheek lip eyebrow wrist ankle fist beard|transport:car bus taxi truck ship boat plane helicopter submarine motorcycle scooter ambulance tram ferry canoe tractor skateboard parachute van lorry yacht raft sled jet airship limousine|job:farmer pilot chef nurse lawyer engineer artist musician singer dancer actor writer painter baker builder plumber electrician firefighter soldier detective judge captain astronaut scientist waiter cashier mechanic dentist vet surgeon photographer sailor butcher gardener|character:pirate wizard knight king queen prince princess clown magician cowboy|myth:ghost monster dragon fairy angel witch|sport:tennis cricket rugby golf swimming running cycling boxing skiing surfing yoga chess dancing fishing camping climbing marathon basketball baseball hockey volleyball badminton archery fencing wrestling gymnastics snooker darts bowling karate judo rowing sailing diving skating|music:violin drum trumpet flute harp song poem statue saxophone cello orchestra opera choir concert melody rhythm microphone ballet painting sculpture novel|concept:love fear joy anger memory dream secret friendship freedom adventure mystery silence luck courage hope truth justice peace war power magic gravity energy language money wealth poverty trust jealousy pride sadness laughter kindness patience wisdom nightmare|time:summer spring autumn morning midnight sunrise sunset holiday birthday weekend evening century yesterday tomorrow season midday dawn dusk festival anniversary";
+const CATS={animal:"It's an animal.",food:"You can eat it.",drink:"You can drink it.",place:"It's a place.",object:"It's an everyday object.",clothing:"You can wear it.",nature:"It's found in nature.",body:"It's part of the body.",transport:"It's a way to travel.",job:"It's a job.",character:"It's a type of character or role.",myth:"It's a creature of myth or imagination.",sport:"It's a sport or activity.",music:"It's connected to music or art.",concept:"It's an idea or feeling.",time:"It's connected to time or the seasons."};
+const EXTRA=[];EXTRA_RAW.split("|").forEach(g=>{const [c,w]=g.split(":");w.split(" ").forEach(a=>EXTRA.push({a,c}))});
+/* Puzzle order: #1-39 are the hand-hinted DATA words. After that every day draws from a fixed shuffle of EXTRA.
+   When a shuffle is used up, the game reshuffles (EXTRA + DATA) with a new fixed seed, so puzzles never run out. */
+const _sh={};
+function order(c,len){if(!_sh[c]){let s=1234567+c*7919;const r=()=>{s=(s+0x6D2B79F5)|0;let x=Math.imul(s^s>>>15,1|s);x=x+Math.imul(x^x>>>7,61|x)^x;return((x^x>>>14)>>>0)/4294967296},o=[...Array(len).keys()];for(let i=len-1;i>0;i--){const j=Math.floor(r()*(i+1));[o[i],o[j]]=[o[j],o[i]]}_sh[c]=o}return _sh[c]}
+function target(id){
+  const i=Math.max(0,dayNum(id)-1);if(i<DATA.length)return DATA[i];
+  let j=i-DATA.length,c=0,len=EXTRA.length;
+  while(j>=len){j-=len;c++;len=EXTRA.length+DATA.length}
+  const w=(c===0?EXTRA:EXTRA.concat(DATA))[order(c,len)[j]];
+  return w.h?w:{a:w.a,h:[CATS[w.c],`It has ${w.a.length} letters.`,`It starts with "${w.a[0].toUpperCase()}" and ends with "${w.a[w.a.length-1].toUpperCase()}".`]};
+}
 
 /* ---------- state ---------- */
 let todayId=ukDate(),puzzleId=todayId,G,ready=false,extractor,tCache={};
@@ -360,15 +384,16 @@ function drawStats(){
   $("#hist").innerHTML=st.ids.length?[...st.ids].reverse().slice(0,12).map(k=>{const g=st.s[k];return`<div class="hist"><span>#${String(dayNum(k)).padStart(3,"0")}</span><div class="t"><i style="width:${g.final}%;--bg2:${Math.round(100/g.final*100)}%"></i></div><span>${g.final}°</span></div>`}).join(""):'<p class="note">Solve a puzzle and it shows up here.</p>';
 }
 function drawArchive(){
-  const n=dayNum(todayId),s=saved(),first=new Date(utc(EPOCH)),last=new Date(utc(todayId));let h="";
-  for(let y=last.getUTCFullYear(),m=last.getUTCMonth();y>first.getUTCFullYear()||(y===first.getUTCFullYear()&&m>=first.getUTCMonth());){
-    const dim=new Date(Date.UTC(y,m+1,0)).getUTCDate(),off=(new Date(Date.UTC(y,m,1)).getUTCDay()+6)%7;
-    h+=`<h3>${new Date(Date.UTC(y,m,1)).toLocaleDateString("en-GB",{month:"long",year:"numeric",timeZone:"UTC"})}</h3><div class="g">${"MTWTFSS".split("").map(c=>`<span>${c}</span>`).join("")}${'<a class="empty"></a>'.repeat(off)}`;
-    for(let d=1;d<=dim;d++){const id=`${y}-${pad(m+1)}-${pad(d)}`,num=dayNum(id);
-      if(num<1||num>n)h+='<a class="empty"></a>';else{const g=s[id],done=g&&g.solved;h+=`<a href="#play" data-id="${id}" class="${done?"done":""} ${id===todayId?"today":""}" style="--k:${done?band(g.final)[2]:""}">#${num}<small>${done?g.final+"°":d}</small></a>`}}
-    h+="</div>";m--;if(m<0){m=11;y--}
+  const n=dayNum(todayId),s=saved(),months={};let solved=0;
+  for(let i=n;i>=1;i--){
+    const id=idFromNum(i),g=s[id],done=g&&g.solved,d=new Date(utc(id));if(done)solved++;
+    const mk=d.toLocaleDateString("en-GB",{month:"long",year:"numeric",timeZone:"UTC"});
+    (months[mk]=months[mk]||[]).push(`<a href="#" data-id="${id}" class="tile ${done?"done":""} ${id===todayId?"today":""}" style="--k:${done?band(g.final)[2]:"#fff"}"><small>${d.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"UTC"})}</small><b>#${String(i).padStart(3,"0")}</b><span>${done?g.final+"°":id===todayId?"Play today":"Play"}</span></a>`);
   }
-  $("#cal").innerHTML=h;$$("#cal a[data-id]").forEach(a=>a.onclick=e=>{e.preventDefault();load(a.dataset.id);head();render();window.__arch=true;go("play")});
+  let h=`<div class="card prog"><div><b>${solved}</b> of ${n} solved</div><div class="t"><i style="width:${Math.round(solved/n*100)}%"></i></div></div>`;
+  for(const m in months)h+=`<h3 class="mh">${m}</h3><div class="tiles">${months[m].join("")}</div>`;
+  $("#cal").innerHTML=h;
+  $$("#cal a[data-id]").forEach(a=>a.onclick=e=>{e.preventDefault();load(a.dataset.id);head();render();window.__arch=true;go("play")});
 }
 
 /* ---------- routing, menu, sound, confetti ---------- */
