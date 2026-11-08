@@ -49,9 +49,15 @@ h2.page{font:800 clamp(38px,11vw,56px)/1 'Bricolage Grotesque';letter-spacing:-.
 .thermo{display:flex;align-items:center;margin:38px 0 4px;position:relative}
 .bulb{flex:none;width:44px;height:44px;border-radius:50%;background:var(--c);transition:background .8s;box-shadow:inset 0 -5px 8px rgba(0,0,0,.18),inset 0 4px 6px rgba(255,255,255,.4);z-index:2}
 .tube{position:relative;flex:1;height:22px;margin-left:-12px;border-radius:0 99px 99px 0;background:#ebe6da;box-shadow:inset 0 3px 6px rgba(0,0,0,.12)}
-.tube .g{position:absolute;inset:0;border-radius:0 99px 99px 0;background:var(--th);clip-path:inset(0 calc(100% - var(--w,0%)) 0 0);transition:clip-path 1s cubic-bezier(.2,.9,.2,1)}
+.tube .g{position:absolute;inset:0;border-radius:0 99px 99px 0;background:var(--th);clip-path:inset(0 calc(100% - var(--w,0%)) 0 0);transition:clip-path .95s cubic-bezier(.25,.8,.25,1)}
 .tube .cool{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(45deg,rgba(255,255,255,.7) 0 3px,rgba(36,36,36,.28) 3px 6px);transition:all 1s cubic-bezier(.2,.9,.2,1)}
 .knob{display:none;position:absolute;top:50%;width:42px;height:42px;border-radius:50%;transform:translate(-50%,-50%);place-items:center;font:800 14px 'Bricolage Grotesque';color:#fff;border:3px solid #fff;box-shadow:0 5px 14px rgba(0,0,0,.3);transition:left 1s cubic-bezier(.2,.9,.2,1),background .6s;z-index:3;text-shadow:0 1px 2px rgba(0,0,0,.35)}
+.knob.bounce{animation:kb .7s}
+@keyframes kb{40%{transform:translate(-50%,-50%) scale(1.28)}}
+.fb{margin:-4px 0 16px;padding:13px 16px;border-radius:20px;background:#fff;border-left:7px solid var(--k);font:700 17px/1.3 'Bricolage Grotesque';box-shadow:0 12px 28px -22px rgba(0,0,0,.45)}
+.fb small{display:block;font:600 13px 'Bricolage Grotesque';color:var(--mute);margin-top:3px}
+.fb.pop{animation:fbpop .5s cubic-bezier(.2,1.5,.4,1)}
+@keyframes fbpop{from{transform:translateY(-8px) scale(.96);opacity:.2}}
 .tube .best{position:absolute;top:-30px;transform:translateX(-50%);font:700 11px 'Bricolage Grotesque';white-space:nowrap;transition:left 1s}
 .tube .best:after{content:"";display:block;width:2px;height:46px;background:var(--ink);margin:2px auto 0;opacity:.55}
 .scale{display:flex;justify-content:space-between;margin:6px 0 0 32px;font:600 11px 'Bricolage Grotesque';color:var(--mute)}
@@ -169,6 +175,7 @@ pre.share{background:#fff;color:var(--ink);border-radius:18px;padding:16px;font:
     <div class="scale"><span>0°</span><span>25°</span><span>50°</span><span>75°</span><span>100°</span></div>
   </div>
 
+  <div class="fb" id="fb" style="display:none"></div>
   <div class="card" id="inputCard">
     <div id="loading"><b class="s">Warming up the meaning engine…</b><div class="load"><i id="ldBar"></i></div><p class="note" id="ldNote">First visit downloads a small language model (about 25 MB). After that it loads from your browser's cache.</p></div>
     <form id="f" autocomplete="off" style="display:none"><input id="g" aria-label="Your guess" placeholder="Type any word…" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="go" maxlength="30"><button>Guess</button></form>
@@ -220,7 +227,7 @@ pre.share{background:#fff;color:var(--ink);border-radius:18px;padding:16px;font:
    Tune the feel of the temperature by editing CAL below.
    Note: the daily words ship inside this file (lightly encoded), so someone reading the
    source could spoil them. Without a server that cannot be prevented. */
-const CAL={floor:0.08,span:0.62,curve:0.9,cap:98};
+/* Scoring calibration: related words (cosine >= 0.30) use the KN curve below; colder words are ranked against a reference vocabulary so two "cold" words still separate. */
 const EPOCH="2026-10-30"; // puzzle #001 (UK calendar date)
 const DATA=JSON.parse(atob("W3siYSI6ICJvY2VhbiIsICJoIjogWyJJdCdzIGEgbmF0dXJhbCBmZWF0dXJlLiIsICJJdCBjb3ZlcnMgbW9zdCBvZiB0aGUgcGxhbmV0LiIsICJJdCBob2xkcyBzYWx0IHdhdGVyLiJdfSwgeyJhIjogImtpdGNoZW4iLCAiaCI6IFsiWW91J2xsIGZpbmQgb25lIGluIG1vc3QgaG9tZXMuIiwgIlRoaW5ncyBnZXQgaG90IGluIGhlcmUuIiwgIk1lYWxzIGFyZSBtYWRlIGhlcmUuIl19LCB7ImEiOiAibW91bnRhaW4iLCAiaCI6IFsiSXQncyBhIGxhbmRmb3JtLiIsICJJdCdzIGJpZyBhbmQgaGlnaC4iLCAiUGVvcGxlIGNsaW1iIGl0IGZvciB0aGUgdmlldy4iXX0sIHsiYSI6ICJsaWJyYXJ5IiwgImgiOiBbIkl0J3MgYSBidWlsZGluZy4iLCAiU2lsZW5jZSBpcyBleHBlY3RlZCBoZXJlLiIsICJZb3UgY2FuIGJvcnJvdyB0aGluZ3MgZnJvbSBpdC4iXX0sIHsiYSI6ICJndWl0YXIiLCAiaCI6IFsiSXQncyBhbiBvYmplY3QuIiwgIkl0IG1ha2VzIHNvdW5kLiIsICJJdCB1c3VhbGx5IGhhcyBzaXggc3RyaW5ncy4iXX0sIHsiYSI6ICJyYWluIiwgImgiOiBbIkl0J3Mgd2VhdGhlci4iLCAiQnJpdG9ucyBkaXNjdXNzIGl0IGNvbnN0YW50bHkuIiwgIkl0IGZhbGxzIGZyb20gdGhlIHNreS4iXX0sIHsiYSI6ICJicmlkZ2UiLCAiaCI6IFsiSXQgY29ubmVjdHMgdGhpbmdzLiIsICJJdCBvZnRlbiBjcm9zc2VzIHdhdGVyLiIsICJDYXJzIGFuZCB0cmFpbnMgdXNlIGl0IHRvIGNyb3NzIGdhcHMuIl19LCB7ImEiOiAiZ2FyZGVuIiwgImgiOiBbIkl0J3MgdXN1YWxseSBvdXRkb29ycy4iLCAiR3JlZW4gZmluZ2VycyBoZWxwLiIsICJQbGFudHMgYXJlIGdyb3duIGhlcmUuIl19LCB7ImEiOiAibGlnaHRob3VzZSIsICJoIjogWyJJdCdzIGEgc3RydWN0dXJlLiIsICJJdCBzdGFuZHMgbmVhciB0aGUgY29hc3QuIiwgIkl0cyBsaWdodCB3YXJucyBzaGlwcy4iXX0sIHsiYSI6ICJjbG9jayIsICJoIjogWyJJdCdzIGFuIG9iamVjdC4iLCAiSXQncyBpbiBob21lcyBhbmQgb24gcGhvbmVzLiIsICJJdCBzaG93cyB0aGUgdGltZS4iXX0sIHsiYSI6ICJ2b2xjYW5vIiwgImgiOiBbIkl0J3MgYSBsYW5kZm9ybS4iLCAiSXQgY2FuIGJlIGRvcm1hbnQgb3IgYWN0aXZlLiIsICJMYXZhIGNvbWVzIG91dCBvZiBpdC4iXX0sIHsiYSI6ICJjb2ZmZWUiLCAiaCI6IFsiWW91IGNhbiBkcmluayBpdC4iLCAiTWFueSBwZW9wbGUgY2FuJ3Qgc3RhcnQgdGhlIGRheSB3aXRob3V0IGl0LiIsICJJdCdzIG1hZGUgZnJvbSByb2FzdGVkIGJlYW5zLiJdfSwgeyJhIjogInRyYWluIiwgImgiOiBbIkl0J3MgdHJhbnNwb3J0LiIsICJJdCBydW5zIG9uIHRyYWNrcy4iLCAiSXQgc3RvcHMgYXQgc3RhdGlvbnMuIl19LCB7ImEiOiAiZGVzZXJ0IiwgImgiOiBbIkl0J3MgYSBsYW5kc2NhcGUuIiwgIkl0J3MgZXh0cmVtZWx5IGRyeS4iLCAiVGhpbmsgc2FuZCBkdW5lcyBhbmQgY2FtZWxzLiJdfSwgeyJhIjogIm1pcnJvciIsICJoIjogWyJJdCdzIGFuIG9iamVjdC4iLCAiWW91IHByb2JhYmx5IGhhdmUgb25lIGF0IGhvbWUuIiwgIkl0IHNob3dzIHlvdXIgcmVmbGVjdGlvbi4iXX0sIHsiYSI6ICJjYXN0bGUiLCAiaCI6IFsiSXQncyBhIGJ1aWxkaW5nLiIsICJLaW5ncyBhbmQgcXVlZW5zIGxpdmVkIGluIHRoZW0uIiwgIkl0IGhhcyB0b3dlcnMgYW5kIHdhbGxzLiJdfSwgeyJhIjogInRodW5kZXIiLCAiaCI6IFsiSXQncyBhIHNvdW5kLiIsICJJdCBiZWxvbmdzIHRvIHN0b3Jtcy4iLCAiSXQgZm9sbG93cyBsaWdodG5pbmcuIl19LCB7ImEiOiAiYmljeWNsZSIsICJoIjogWyJJdCdzIGEgdmVoaWNsZS4iLCAiWW91IHBvd2VyIGl0IHlvdXJzZWxmLiIsICJJdCBoYXMgdHdvIHdoZWVscyBhbmQgcGVkYWxzLiJdfSwgeyJhIjogInBpYW5vIiwgImgiOiBbIkl0J3MgYW4gaW5zdHJ1bWVudC4iLCAiSXQgaGFzIGJsYWNrIGFuZCB3aGl0ZSBrZXlzLiIsICJQaWFuaXN0cyBwbGF5IGl0LiJdfSwgeyJhIjogImZvcmVzdCIsICJoIjogWyJJdCdzIGEgcGxhY2UuIiwgIkl0J3MgZnVsbCBvZiB0cmVlcy4iLCAiV29sdmVzIGFuZCBiZWFycyBtaWdodCBsaXZlIGluIG9uZS4iXX0sIHsiYSI6ICJjYW5kbGUiLCAiaCI6IFsiSXQncyBhbiBvYmplY3QuIiwgIkl0IGdpdmVzIGxpZ2h0IGFuZCBzb21ldGltZXMgc2NlbnQuIiwgIkl0IGhhcyBhIHdpY2sgYW5kIHdheC4iXX0sIHsiYSI6ICJ1bWJyZWxsYSIsICJoIjogWyJJdCdzIGFuIGFjY2Vzc29yeS4iLCAiSGFuZHkgaW4gQnJpdGFpbi4iLCAiSXQga2VlcHMgeW91IGRyeSBpbiB0aGUgcmFpbi4iXX0sIHsiYSI6ICJwaXp6YSIsICJoIjogWyJJdCdzIGZvb2QuIiwgIkl0YWx5IGdhdmUgaXQgdG8gdGhlIHdvcmxkLiIsICJEb3VnaCwgdG9tYXRvIGFuZCBjaGVlc2UuIl19LCB7ImEiOiAiZG9jdG9yIiwgImgiOiBbIkl0J3MgYSBqb2IuIiwgIlRoZXkgd29yayBpbiBob3NwaXRhbHMgYW5kIHN1cmdlcmllcy4iLCAiVGhleSB0cmVhdCBwYXRpZW50cy4iXX0sIHsiYSI6ICJpc2xhbmQiLCAiaCI6IFsiSXQncyBhIHBsYWNlLiIsICJJdCdzIHN1cnJvdW5kZWQgYnkgd2F0ZXIuIiwgIlRoaW5rIEhhd2FpaSBvciBTa3llLiJdfSwgeyJhIjogInNub3ciLCAiaCI6IFsiSXQncyB3ZWF0aGVyLiIsICJJdCdzIGNvbGQgYW5kIG9mdGVuIHdoaXRlLiIsICJZb3UgY2FuIGJ1aWxkIGEgbWFuIG91dCBvZiBpdC4iXX0sIHsiYSI6ICJ0ZWFjaGVyIiwgImgiOiBbIkl0J3MgYSBqb2IuIiwgIlRoZXkgd29yayBpbiBzY2hvb2xzLiIsICJUaGV5IHNldCBob21ld29yay4iXX0sIHsiYSI6ICJyb2NrZXQiLCAiaCI6IFsiSXQncyBhIHZlaGljbGUuIiwgIkl0IGxlYXZlcyB0aGUgcGxhbmV0LiIsICJJdCBsYXVuY2hlcyBpbnRvIHNwYWNlLiJdfSwgeyJhIjogImZhcm0iLCAiaCI6IFsiSXQncyBhIHBsYWNlLiIsICJBbmltYWxzIGFuZCBjcm9wcyBsaXZlIGhlcmUuIiwgIkEgdHJhY3RvciBpcyBhdCBob21lIGhlcmUuIl19LCB7ImEiOiAiY2luZW1hIiwgImgiOiBbIkl0J3MgYSBwbGFjZS4iLCAiWW91IGdvIHRvIHNlZSBzb21ldGhpbmcuIiwgIlBvcGNvcm4gYW5kIGEgYmlnIHNjcmVlbi4iXX0sIHsiYSI6ICJweXJhbWlkIiwgImgiOiBbIkl0J3MgYSBzdHJ1Y3R1cmUuIiwgIkl0J3MgYW5jaWVudCBhbmQgZmFtb3VzLiIsICJFZ3lwdCBoYXMgdGhlIGJlc3Qta25vd24gb25lcy4iXX0sIHsiYSI6ICJiYWtlcnkiLCAiaCI6IFsiSXQncyBhIHNob3AuIiwgIkl0IHNtZWxscyB3b25kZXJmdWwuIiwgIkJyZWFkIGFuZCBjYWtlcyBhcmUgbWFkZSBoZXJlLiJdfSwgeyJhIjogInBhc3Nwb3J0IiwgImgiOiBbIkl0J3MgYSBkb2N1bWVudC4iLCAiSXQncyBuZWVkZWQgZm9yIHRyYXZlbC4iLCAiQm9yZGVyIGNvbnRyb2wgY2hlY2tzIGl0LiJdfSwgeyJhIjogInNoYWRvdyIsICJoIjogWyJZb3UgY2FuIHNlZSBpdCBidXQgbm90IHRvdWNoIGl0LiIsICJJdCBuZWVkcyBsaWdodCB0byBleGlzdC4iLCAiSXQgZm9sbG93cyB5b3UgYXJvdW5kLiJdfSwgeyJhIjogImNvbXBhc3MiLCAiaCI6IFsiSXQncyBhIHRvb2wuIiwgIkl0IGhlbHBzIHlvdSBmaW5kIHlvdXIgd2F5LiIsICJJdHMgbmVlZGxlIHBvaW50cyBub3J0aC4iXX0sIHsiYSI6ICJqdW5nbGUiLCAiaCI6IFsiSXQncyBhIHBsYWNlLiIsICJJdCdzIGhvdCwgd2V0IGFuZCBkZW5zZS4iLCAiVGFyemFuIHN3dW5nIHRocm91Z2ggb25lLiJdfSwgeyJhIjogIndpbnRlciIsICJoIjogWyJJdCdzIGEgc2Vhc29uLiIsICJJdCdzIHRoZSBjb2xkZXN0IG9uZS4iLCAiQ2hyaXN0bWFzIGhhcHBlbnMgaW4gaXQuIl19LCB7ImEiOiAiZm9vdGJhbGwiLCAiaCI6IFsiSXQncyBhIHNwb3J0LiIsICJJdCdzIHBsYXllZCB3aXRoIGEgcm91bmQgYmFsbC4iLCAiRWxldmVuIHBsYXllcnMgYSBzaWRlLiJdfSwgeyJhIjogIndlZGRpbmciLCAiaCI6IFsiSXQncyBhbiBldmVudC4iLCAiUmluZ3MgYXJlIGV4Y2hhbmdlZC4iLCAiQSBicmlkZSBhbmQgZ3Jvb20gYXR0ZW5kLiJdfV0="));
 const BANDS=[[0,"Arctic","#2F6FED"],[10,"Freezing","#3F7FEF"],[25,"Cold","#6FA8F5"],[40,"Cool","#8DB5D4"],[55,"Warm","#F2A55A"],[70,"Hot","#F58A2E"],[85,"Very hot","#E8531F"],[95,"Scorching","#D6301D"],[100,"BOILING!","#B91C1C"]];
@@ -272,20 +279,63 @@ async function boot(){
     const {pipeline,env}=await import("https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2");
     env.allowLocalModels=false;
     extractor=await pipeline("feature-extraction","Xenova/all-MiniLM-L6-v2",{progress_callback:p=>{if(p.status==="progress")$("#ldBar").style.width=Math.round(p.progress)+"%"}});
-    ready=true;$("#loading").style.display="none";$("#f").style.display="flex";$("#g").focus({preventScroll:true});
+    ready=true;prewarm();$("#loading").style.display="none";$("#f").style.display="flex";$("#g").focus({preventScroll:true});
   }catch(e){$("#ldNote").textContent="Couldn't load the language model. Check your connection and refresh the page.";$("#ldNote").style.color="var(--red)"}
 }
 const embed=async w=>(await extractor(w,{pooling:"mean",normalize:true})).data;
+const KN=[[0.30,40],[0.40,53],[0.50,66],[0.60,77],[0.70,87],[0.80,94],[0.90,98],[1,98]],COLD_AT=0.30,refCache={};
+const dotAt=(big,v,o)=>{let c=0;for(let i=0;i<v.length;i++)c+=big[o+i]*v[i];return c};
+async function targetVec(t){return tCache[t]=tCache[t]||await embed(t)}
+function refSims(t,tv){
+  if(!refCache[t])refCache[t]=(async()=>{
+    const words=[...EXTRA.filter((_,i)=>i%4===0).map(x=>x.a),...DATA.slice(0,20).map(x=>x.a)].filter(w=>w!==t);
+    const out=await extractor(words,{pooling:"mean",normalize:true}),d=out.data,s=[];
+    for(let i=0;i<words.length;i++)s.push(dotAt(d,tv,i*tv.length));
+    return s.sort((x,y)=>x-y);
+  })();
+  return refCache[t];
+}
+function prewarm(){const t=target(puzzleId).a;targetVec(t).then(v=>refSims(t,v)).catch(()=>{})}
+function calibrate(c,ref){
+  if(c>=COLD_AT){let i=1;while(i<KN.length-1&&c>KN[i][0])i++;const[a,x]=KN[i-1],[b,y]=KN[i];return Math.min(98,Math.round(x+(y-x)*(c-a)/(b-a)))}
+  if(!ref||!ref.length)return Math.round(40*Math.max(0,c+.05)/.35);
+  const below=v=>ref.filter(s=>s<v).length/ref.length,p0=Math.max(.5,below(COLD_AT));
+  return Math.round(40*Math.pow(Math.min(1,below(c)/p0),1.4));
+}
 async function scoreGuess(w){
   const t=target(puzzleId).a;
   if(w===t||w===t+"s"||w+"s"===t)return{sim:100,solved:true};
-  tCache[t]=tCache[t]||await embed(t);const v=await embed(w);
-  let c=0;for(let i=0;i<v.length;i++)c+=v[i]*tCache[t][i];
-  const s=Math.min(1,Math.max(0,(c-CAL.floor)/CAL.span));
-  return{sim:Math.min(CAL.cap,Math.round(100*Math.pow(s,CAL.curve))),solved:false};
+  const tv=await targetVec(t),ref=await refSims(t,tv).catch(()=>null),v=await embed(w);
+  let c=0;for(let i=0;i<v.length;i++)c+=v[i]*tv[i];
+  return{sim:calibrate(c,ref),solved:false};
+}
+
+/* ---------- funny feedback ---------- */
+const FB=[
+["Not even close. The penguins are laughing.","Absolutely glacial. Try a different galaxy.","That's so far off it's in another postcode.","Brr. Frostbite detected.","Arctic. Even the polar bears left."],
+["Still frozen solid.","Chilly. Very chilly.","Your fingers are going numb.","A faint pulse of relevance. Barely.","Icy, but you can see your breath, which is progress."],
+["Cold, but there's a pulse.","Getting a little less icy.","Cold. Put a jumper on and keep going.","There's a whisper of a link in there.","Cold, with a chance of cleverness."],
+["Cool. Something's connecting.","Lukewarm vibes. You're sniffing around something.","Cool, and getting curious.","Not bad. The thermostat just twitched.","That one has a loose connection to the answer."],
+["Warm! The thermostat just clicked.","Now we're cooking. Gently.","Ooh, you can feel the heat from here.","Warm. Your brain's on to something.","Warming up nicely, like a good cup of tea."],
+["Hot! You're circling it.","Toasty. Your instincts are good.","That's got some heat on it!","Ooh, hot. Pop a window open.","Right neighbourhood. Maybe even the right street."],
+["That was steaming!","Oven mitts on, you're nearly there.","So close the kettle's whistling.","Very hot! Don't stop now.","Sizzling. You can practically smell it."],
+["Scorching! One word away.","Are you kidding? That's practically it.","Smoke alarm's going off. Try a neighbour of that word.","So hot the thermometer's sweating.","You're standing right next to it."],
+["Got it!"]];
+function feedback(sim){
+  const bi=BANDS.indexOf(band(sim)),arr=FB[bi],last=G.fb&&G.fb.t;let m;
+  do{m=arr[Math.floor(Math.random()*arr.length)]}while(m===last&&arr.length>1);
+  const gs=G.guesses,prev=gs.length>1?gs[gs.length-2].sim:null,bestBefore=gs.length>1?Math.max(...gs.slice(0,-1).map(g=>g.sim)):null;
+  let tag="First guess logged.";
+  if(prev!==null)tag=sim>(bestBefore??-1)?`New best! +${sim-bestBefore}° on your previous best`:sim>prev?`Warmer than your last guess (+${sim-prev}°)`:sim<prev?`Colder than your last guess (−${prev-sim}°)`:"Same heat as your last guess";
+  return{t:m,tag,k:BANDS[bi][2]};
 }
 
 /* ---------- render ---------- */
+let _tw;
+function setBig(v){const el=$("#eff"),a=parseInt(el.textContent);cancelAnimationFrame(_tw);
+  if(isNaN(a)||Math.abs(v-a)<2){el.textContent=v+"°";return}
+  const t0=performance.now(),step=n=>{const k=Math.min(1,(n-t0)/700);el.textContent=Math.round(a+(v-a)*(1-Math.pow(1-k,3)))+"°";if(k<1)_tw=requestAnimationFrame(step)};_tw=requestAnimationFrame(step)}
+function knob(v,col){const kb=$("#knob");kb.style.display="grid";kb.style.left=Math.max(5,Math.min(95,v))+"%";kb.textContent=v;kb.style.background=col}
 function paint(sim,eff,best,col){
   const r=document.documentElement.style;r.setProperty("--c",col);
   $(".tube .g").style.setProperty("--w",eff+"%");
@@ -298,10 +348,11 @@ function render(){
   $("#knob").style.display="none";
   if(G.solved){$("#eff").classList.add("idle");$("#sim").textContent="100";$("#bandLabel").textContent="Correct after "+n+" guess"+(n==1?"":"es");paint(G.final,G.final,null,band(G.final)[2]);const kb=$("#knob");kb.style.display="grid";kb.style.left=Math.max(5,Math.min(95,G.final))+"%";kb.textContent=G.final;kb.style.background=band(G.final)[2]}
   else if(last){const eff=effTemp(last.sim,secs,n),b=band(eff);
-    $("#eff").classList.remove("idle");$("#eff").textContent=eff+"°";$("#sim").textContent=last.sim;$("#bandLabel").textContent=b[1]+(eff!==last.sim&&!G.solved?" (cooled from "+band(last.sim)[1].toLowerCase()+")":"");paint(last.sim,eff,best,b[2])}
+    $("#eff").classList.remove("idle");setBig(eff);$("#sim").textContent=last.sim;$("#bandLabel").textContent=b[1]+(eff!==last.sim&&!G.solved?" (cooled from "+band(last.sim)[1].toLowerCase()+")":"");paint(last.sim,eff,best,b[2]);knob(eff,b[2])}
   else{$("#eff").classList.add("idle");$("#eff").textContent="";$("#sim").textContent="–";$("#bandLabel").textContent="Guess to begin…";paint(0,0,null,"#5BB8F5")}
   if(n)$("#list").innerHTML=G.guesses.map((g,i)=>({...g,i})).sort((a,b)=>b.sim-a.sim||b.i-a.i).map(g=>{const b=band(g.sim);return`<div class="guess ${g.i==n-1&&G.fresh?"new":""}" style="--k:${b[2]};--p:${g.sim}%"><i></i><b>${esc(g.w)}</b><em>${g.exact?"Correct":b[1]}</em><strong>${g.exact?"✓":g.sim+"°"}</strong></div>`}).join("");
   else $("#list").innerHTML='<p class="note">Nothing yet. Try anything: the first guess is free information.</p>';
+  const fb=$("#fb");if(G.fb&&!G.solved&&n){fb.style.display="";fb.style.setProperty("--k",G.fb.k);fb.innerHTML=`${esc(G.fb.t)}<small>${esc(G.fb.tag)}</small>`}else fb.style.display="none";
   $("#inputCard").style.display=G.solved?"none":"";$("#hintCard").style.display=G.solved?"none":"";
   $("#result").style.display=G.solved?"":"none";if(G.solved)$("#result").innerHTML=resultHTML();
   $("#hints").innerHTML=[0,1,2].map(i=>`<details ${G.hintText[i]?"open":""}><summary data-h="${i}"><span>Hint ${i+1} <span class="band">(−${[5,10,15][i]}°)</span></span></summary>${G.hintText[i]?`<div class="hint">${esc(G.hintText[i])}</div>`:""}</details>`).join("");
@@ -364,9 +415,9 @@ $("#f").onsubmit=async e=>{
   try{r=await scoreGuess(w)}catch{$("#g").disabled=false;return flash("Something went wrong. Try again.")}
   $("#g").disabled=false;$("#g").value="";$("#g").focus({preventScroll:true});
   G.guesses.push({w,sim:r.sim,exact:r.solved});G.fresh=true;
-  if(r.solved){G.secs=elapsed();G.solved=true;G.answer=target(puzzleId).a;G.final=finalScore(G.secs,G.guesses.length,G.hints);G.archive=puzzleId!==todayId;confetti()}
-  else{if(r.sim>=85){const t=$("#thermo");t.classList.remove("pulse");void t.offsetWidth;t.classList.add("pulse")}}
-  persist();render();G.fresh=false;
+  if(r.solved){G.fb=null;G.secs=elapsed();G.solved=true;G.answer=target(puzzleId).a;G.final=finalScore(G.secs,G.guesses.length,G.hints);G.archive=puzzleId!==todayId;confetti()}
+  else{G.fb=feedback(r.sim);if(r.sim>=85){const t=$("#thermo");t.classList.remove("pulse");void t.offsetWidth;t.classList.add("pulse")}}
+  persist();render();G.fresh=false;{const f=$("#fb"),k=$("#knob");f.classList.remove("pop");k.classList.remove("bounce");void f.offsetWidth;f.classList.add("pop");k.classList.add("bounce")}
 };
 
 /* ---------- stats / archive ---------- */
