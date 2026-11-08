@@ -46,10 +46,9 @@ h2.page{font:800 clamp(38px,11vw,56px)/1 'Bricolage Grotesque';letter-spacing:-.
 #bandLabel{font-size:17px}
 .two{font:600 13px/1.5 'Bricolage Grotesque';color:var(--mute);text-align:right;padding-bottom:6px}
 .two b{color:var(--ink);font-size:15px}
-.thermo{display:flex;align-items:center;margin:28px 0 2px;position:relative}
-.bulb{flex:none;width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#2F6FED 0%,#6FA8F5 28%,#F6D9A8 52%,#F59E4A 76%,#C81E1E 100%);z-index:2}
-.tube{position:relative;flex:1;height:18px;margin-left:-10px;border-radius:0 99px 99px 0;background:#ebe6da;box-shadow:inset 0 3px 6px rgba(0,0,0,.12)}
-.tube .g{position:absolute;inset:0;border-radius:0 99px 99px 0;background:var(--th);clip-path:inset(0 calc(100% - var(--w,0%)) 0 0);transition:clip-path .95s cubic-bezier(.25,.8,.25,1)}
+.thermo{display:flex;align-items:center;margin:28px 18px 2px;position:relative}
+.tube{position:relative;flex:1;height:18px;border-radius:99px;background:#ebe6da;box-shadow:inset 0 3px 6px rgba(0,0,0,.12)}
+.tube .g{position:absolute;inset:0;border-radius:99px;background:var(--th);clip-path:inset(0 calc(100% - var(--w,0%)) 0 0);transition:clip-path .95s cubic-bezier(.25,.8,.25,1)}
 .tube .cool{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(45deg,rgba(255,255,255,.7) 0 3px,rgba(36,36,36,.28) 3px 6px);transition:all 1s cubic-bezier(.2,.9,.2,1)}
 .knob{display:none;position:absolute;top:50%;width:36px;height:36px;border-radius:50%;transform:translate(-50%,-50%);place-items:center;font:800 13px 'Bricolage Grotesque';color:#fff;border:3px solid #fff;box-shadow:0 5px 14px rgba(0,0,0,.3);transition:left 1s cubic-bezier(.2,.9,.2,1),background .6s;z-index:3;text-shadow:0 1px 2px rgba(0,0,0,.35)}
 .knob.bounce{animation:kb .7s}
@@ -60,7 +59,7 @@ h2.page{font:800 clamp(38px,11vw,56px)/1 'Bricolage Grotesque';letter-spacing:-.
 @keyframes fbpop{from{transform:translateY(-8px) scale(.96);opacity:.2}}
 .tube .best{position:absolute;top:-26px;transform:translateX(-50%);font:700 11px 'Bricolage Grotesque';white-space:nowrap;transition:left 1s}
 .tube .best:after{content:"";display:block;width:2px;height:38px;background:var(--ink);margin:2px auto 0;opacity:.55}
-.scale{display:flex;justify-content:space-between;margin:4px 0 0 24px;font:600 11px 'Bricolage Grotesque';color:var(--mute)}
+.scale{display:flex;justify-content:space-between;margin:4px 18px 0;font:600 11px 'Bricolage Grotesque';color:var(--mute)}
 .pulse{animation:pulse .7s}
 @keyframes pulse{40%{transform:scale(1.035)}}
 .note{font:13px/1.45 'Bricolage Grotesque';color:var(--mute);margin-top:12px}
@@ -169,7 +168,7 @@ pre.share{background:#fff;color:var(--ink);border-radius:18px;padding:16px;font:
     <div class="temp"><div><div class="band" id="bandLabel">Guess to begin…</div><div class="big idle" id="eff"></div></div>
       <div class="two">meaning match<br><b id="sim">–</b>/100</div></div>
     <div class="thermo" id="thermo" role="img" aria-label="Temperature bar">
-      <div class="bulb"></div>
+      
       <div class="tube"><div class="g"></div><div class="cool" id="coolSeg"></div><div class="knob" id="knob"></div><div class="best" id="bestMark" style="display:none">best <span id="bestV"></span>°</div></div>
     </div>
     <div class="scale"><span>0°</span><span>25°</span><span>50°</span><span>75°</span><span>100°</span></div>
@@ -335,7 +334,7 @@ let _tw;
 function setBig(v){const el=$("#eff"),a=parseInt(el.textContent);cancelAnimationFrame(_tw);
   if(isNaN(a)||Math.abs(v-a)<2){el.textContent=v+"°";return}
   const t0=performance.now(),step=n=>{const k=Math.min(1,(n-t0)/700);el.textContent=Math.round(a+(v-a)*(1-Math.pow(1-k,3)))+"°";if(k<1)_tw=requestAnimationFrame(step)};_tw=requestAnimationFrame(step)}
-function knob(v,col){const kb=$("#knob");kb.style.display="grid";kb.style.left=Math.max(5,Math.min(95,v))+"%";kb.textContent=v;kb.style.background=col}
+function knob(v,col){const kb=$("#knob");kb.style.display="grid";kb.style.left=Math.max(0,Math.min(100,v))+"%";kb.textContent=v;kb.style.background=col}
 function paint(sim,eff,best,col){
   const r=document.documentElement.style;r.setProperty("--c",col);
   $(".tube .g").style.setProperty("--w",eff+"%");
@@ -346,10 +345,10 @@ function render(){
   const n=G.guesses.length,secs=elapsed(),last=G.guesses[n-1],best=n?Math.max(...G.guesses.map(g=>g.sim)):null;
   $("#nG").textContent=n;$("#tm").textContent=fmt(secs);$("#nH").textContent=G.hints;
   $("#knob").style.display="none";
-  if(G.solved){$("#eff").classList.add("idle");$("#sim").textContent="100";$("#bandLabel").textContent="Correct after "+n+" guess"+(n==1?"":"es");paint(G.final,G.final,null,band(G.final)[2]);const kb=$("#knob");kb.style.display="grid";kb.style.left=Math.max(5,Math.min(95,G.final))+"%";kb.textContent=G.final;kb.style.background=band(G.final)[2]}
+  if(G.solved){$("#eff").classList.add("idle");$("#sim").textContent="100";$("#bandLabel").textContent="Correct after "+n+" guess"+(n==1?"":"es");paint(G.final,G.final,null,band(G.final)[2]);const kb=$("#knob");kb.style.display="grid";kb.style.left=Math.max(0,Math.min(100,G.final))+"%";kb.textContent=G.final;kb.style.background=band(G.final)[2]}
   else if(last){const eff=effTemp(last.sim,secs,n),b=band(eff);
     $("#eff").classList.remove("idle");setBig(eff);$("#sim").textContent=last.sim;$("#bandLabel").textContent=b[1]+(eff!==last.sim&&!G.solved?" (cooled from "+band(last.sim)[1].toLowerCase()+")":"");paint(last.sim,eff,best,b[2]);knob(eff,b[2])}
-  else{$("#eff").classList.add("idle");$("#eff").textContent="";$("#sim").textContent="–";$("#bandLabel").textContent="Guess to begin…";paint(0,0,null,"#5BB8F5")}
+  else{$("#eff").classList.add("idle");$("#eff").textContent="";$("#sim").textContent="–";$("#bandLabel").textContent="Guess to begin…";paint(0,0,null,"#5BB8F5");knob(0,"#2F6FED")}
   if(n)$("#list").innerHTML=G.guesses.map((g,i)=>({...g,i})).sort((a,b)=>b.sim-a.sim||b.i-a.i).map(g=>{const b=band(g.sim);return`<div class="guess ${g.i==n-1&&G.fresh?"new":""}" style="--k:${b[2]};--p:${g.sim}%"><i></i><b>${esc(g.w)}</b><em>${g.exact?"Correct":b[1]}</em><strong>${g.exact?"✓":g.sim+"°"}</strong></div>`}).join("");
   else $("#list").innerHTML='<p class="note">Nothing yet. Try anything: the first guess is free information.</p>';
   const fb=$("#fb");if(G.fb&&!G.solved&&n){fb.style.display="";fb.style.setProperty("--k",G.fb.k);fb.innerHTML=`${esc(G.fb.t)}<small>${esc(G.fb.tag)}</small>`}else fb.style.display="none";
